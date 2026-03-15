@@ -5,34 +5,58 @@
 # 4. Update birthdays.csv to contain today's month and day.
 # See the solution video in the 100 Days of Python Course for explainations.
 
+import smtplib                # مكتبة لإرسال الايميلات
+import datetime as dt         # مكتبة لمعرفة التاريخ والوقت
+import random                 # لاختيار رسالة عشوائية
+import pandas                 # لقراءة ملف CSV
 
-from datetime import datetime
-import pandas
-import random
-import smtplib
-import os
+MY_EMAIL = "your_email@gmail.com"      # ايميل المرسل
+MY_PASSWORD = "your_password"          # كلمة المرور
 
-# import os and use it to get the Github repository secrets
-MY_EMAIL = os.environ.get("MY_EMAIL")
-MY_PASSWORD = os.environ.get("MY_PASSWORD")
+# الحصول على تاريخ اليوم
+today = dt.datetime.now()
 
-today = datetime.now()
+# تحويل التاريخ الى tuple يحتوي (الشهر ، اليوم)
 today_tuple = (today.month, today.day)
 
+# قراءة ملف birthdays.csv
 data = pandas.read_csv("birthdays.csv")
-birthdays_dict = {(data_row["month"], data_row["day"])                  : data_row for (index, data_row) in data.iterrows()}
+
+# إنشاء Dictionary يكون المفتاح فيه (month, day)
+# والقيمة هي بيانات الشخص في الصف
+birthdays_dict = {
+    (data_row.month, data_row.day): data_row
+    for (index, data_row) in data.iterrows()
+}
+
+# فحص اذا كان تاريخ اليوم موجود في القاموس
 if today_tuple in birthdays_dict:
+
+    # جلب بيانات الشخص الذي عيد ميلاده اليوم
     birthday_person = birthdays_dict[today_tuple]
-    file_path = f"letter_templates/letter_{random.randint(1, 3)}.txt"
+
+    # اختيار رسالة عشوائية من 1 الى 3
+    file_path = f"letter_templates/letter_{random.randint(1,3)}.txt"
+
+    # فتح ملف الرسالة
     with open(file_path) as letter_file:
-        contents = letter_file.read()
+
+        contents = letter_file.read()   # قراءة محتوى الرسالة
+
+        # استبدال كلمة [NAME] باسم الشخص
         contents = contents.replace("[NAME]", birthday_person["name"])
 
-    with smtplib.SMTP("YOUR EMAIL PROVIDER SMTP SERVER ADDRESS") as connection:
-        connection.starttls()
+    # الاتصال بسيرفر ارسال الايميل (Gmail)
+    with smtplib.SMTP("smtp.gmail.com") as connection:
+
+        connection.starttls()   # جعل الاتصال مشفر وآمن
+
+        # تسجيل الدخول الى الايميل
         connection.login(MY_EMAIL, MY_PASSWORD)
+
+        # ارسال الرسالة
         connection.sendmail(
-            from_addr=MY_EMAIL,
-            to_addrs=birthday_person["email"],
-            msg=f"Subject:Happy Birthday!\n\n{contents}"
+            from_addr=MY_EMAIL,                     # المرسل
+            to_addrs=birthday_person["email"],      # المستلم
+            msg=f"Subject:Happy Birthday!\n\n{contents}"   # عنوان الرسالة + النص
         )
